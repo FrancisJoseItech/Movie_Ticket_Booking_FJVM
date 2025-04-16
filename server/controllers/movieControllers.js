@@ -1,30 +1,60 @@
 const Movie = require("../model/movieModel");
 
+// 🎬 Add Movie with Cloudinary Poster Upload (Admin Only)
+const fs = require("fs");
+const uploadToCloudinary = require("../utilities/uploadToCloudinary"); // ✅ Must match the export
+
+
 // 🎬 Add Movie (Admin Only)
 const addMovie = async (req, res) => {
-  const { title, genre, duration, language, posterUrl, description } = req.body;
-
-  // ✅ Log input
-  console.log("📥 Add Movie Request:", req.body);
-
-  // ❗ Check all fields
-  if (!title || !genre || !duration || !language ||  !description) {
-    return res.status(400).json({ message: "All movie fields are required." });
-  }
-
   try {
-    // ❌ Check for duplicate movie title
+    const { title, genre, duration, language, description } = req.body;
+
+    console.log("📥 Add Movie Request Body:", req.body);
+
+    // ❗ Validate required fields
+    if (!title || !genre || !duration || !language || !description) {
+      return res.status(400).json({ message: "All movie fields are required." });
+    }
+
+    // 🔍 Check for duplicate movie
     const existingMovie = await Movie.findOne({ title });
     if (existingMovie) {
       return res.status(400).json({ message: "Movie already exists with the same title." });
     }
 
-    // 💾 Create and save
-    const newMovie = new Movie({ title, genre, duration, language, posterUrl, description });
+    let posterUrl = "";
+    if (req.file) {
+      const localPath = req.file.path;
+      console.log("🖼️ Poster File Path:", localPath);
+
+      try {
+        console.log("📤 Calling uploadToCloudinary...");
+        posterUrl = await uploadToCloudinary(localPath);
+        console.log("🌐 Cloudinary URL returned:", posterUrl);
+      
+        fs.unlinkSync(localPath);
+        console.log("🧹 Local file deleted:", localPath);
+      } catch (cloudErr) {
+        console.error("❌ Cloudinary Upload Error:", cloudErr);
+        return res.status(500).json({ message: "Cloudinary upload failed" });
+      }
+
+    }
+
+    // 💾 Create and save movie
+    const newMovie = new Movie({
+      title,
+      genre,
+      duration,
+      language,
+      description,
+      posterUrl,
+    });
+
     const savedMovie = await newMovie.save();
 
-    // ✅ Log and respond
-    console.log("✅ Movie added:", savedMovie);
+    console.log("✅ Movie saved successfully:", savedMovie);
     res.status(201).json({
       message: "Movie added successfully",
       movie: savedMovie,
@@ -58,36 +88,48 @@ const getAllMovies = async (req, res) => {
   };
 
  // ✏️ Update movie by ID (Admin only)
-const updateMovie = async (req, res) => {
-    const movieId = req.params.id;
-    const updates = req.body;
-  
-    // ✅ Log the incoming update request
-    console.log("✏️ Update Request Received for Movie ID:", movieId);
-    console.log("📦 Update Data:", updates);
-  
-    try {
-      const updatedMovie = await Movie.findByIdAndUpdate(
-        movieId,
-        updates,
-        { new: true, runValidators: true }// new:true for updated data
-      );
-  
-      if (!updatedMovie) {
-        console.warn("❌ Movie not found for update");
-        return res.status(404).json({ message: "Movie not found" });
-      }
-  
-      console.log("✅ Movie updated:", updatedMovie);
-      res.status(200).json({
-        message: "Movie updated successfully",
-        movie: updatedMovie,
-      });
-    } catch (err) {
-      console.error("❌ Error updating movie:", err.message);
-      res.status(500).json({ message: "Server error while updating movie" });
+ const updateMovie = async (req, res) => {
+  const movieId = req.params.id;
+  const updates = req.body;
+
+  console.log("✏️ Update Request for Movie ID:", movieId);
+  console.log("📦 Update Data (before file):", updates);
+
+  try {
+    // ✅ Handle optional poster update
+    if (req.file) {
+      const localPath = req.file.path;
+      console.log("🖼️ New Poster File Path:", localPath);
+
+      const posterUrl = await uploadToCloudinary(localPath);
+      updates.posterUrl = posterUrl;
+
+      // 🧹 Delete local file
+      fs.unlinkSync(localPath);
     }
-  };
+
+    const updatedMovie = await Movie.findByIdAndUpdate(
+      movieId,
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedMovie) {
+      console.warn("❌ Movie not found for update");
+      return res.status(404).json({ message: "Movie not found" });
+    }
+
+    console.log("✅ Movie updated successfully:", updatedMovie);
+    res.status(200).json({
+      message: "Movie updated successfully",
+      movie: updatedMovie,
+    });
+
+  } catch (err) {
+    console.error("❌ Error updating movie:", err.message);
+    res.status(500).json({ message: "Server error while updating movie" });
+  }
+};
   
   // 🗑️ Delete movie by ID (Admin only)
 const deleteMovie = async (req, res) => {

@@ -15,20 +15,21 @@ const Signup = () => {
   // 🔐 Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent page reload
-
-    console.log("🟡 Registering with:", { name, email }); // Debug input
-
+  
+    console.log("🟡 Registering with:", { name, email, password }); // Debug input
+  
     try {
-      const res = await registerUser(name, email, password); // API call
-      console.log("✅ Registration success:", res.data);
-
+      const role = "user"; // ✅ Setting role explicitly for registration
+      const res = await registerUser(name, email, password, role); // ✅ Send role to backend
+      console.log("✅ Registration success:", res.data); // Debug API success
+  
       // Show toast notification
       toast.success("🎉 Registration successful! Please log in.");
-
+  
       // Navigate to login page after successful signup
       navigate("/login");
     } catch (error) {
-      console.error("❌ Registration failed:", error.response?.data?.message || error.message);
+      console.error("❌ Registration failed:", error.response?.data?.message || error.message); // Log the exact error
       toast.error("Registration failed. Please try again.");
     }
   };

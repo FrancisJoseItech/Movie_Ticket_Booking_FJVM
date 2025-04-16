@@ -1,9 +1,9 @@
 import React from 'react'
 
-function Homepage() {
+function HomePage() {
   return (
     <div>Homepage</div>
   )
 }
 
-export default Homepage
+export default HomePage

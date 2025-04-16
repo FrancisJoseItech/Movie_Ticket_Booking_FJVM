@@ -11,4 +11,13 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// ✅ Intercept request to attach token
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token"); // or from Redux store if you store it there
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export { axiosInstance };
