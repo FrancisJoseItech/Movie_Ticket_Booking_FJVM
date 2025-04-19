@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { addMovieWithPoster } from "../../services/adminServices"; // 🧩 Create this service function
+import { addMovieWithPoster, updateMovieWithPoster } from "../../services/adminServices";
 
-const AddMovieForm = ({ onMovieAdded }) => {
+const AddMovieForm = ({ onClose, onMovieAdded, selectedMovie }) => {
   // 🧠 Local state for form fields
   const [formData, setFormData] = useState({
     title: "",
@@ -12,44 +12,62 @@ const AddMovieForm = ({ onMovieAdded }) => {
     description: "",
   });
 
-  const [poster, setPoster] = useState(null); // 🖼️ Poster file
+  const [poster, setPoster] = useState(null); // 🖼️ New poster file
+  const isEditing = Boolean(selectedMovie);   // ✏️ Check if it's edit mode
 
-  // 🛠️ Handle input changes
+  // 🧠 Pre-fill form if editing
+  useEffect(() => {
+    if (isEditing) {
+      console.log("✏️ Edit Mode: Populating form with selected movie:", selectedMovie);
+      setFormData({
+        title: selectedMovie.title,
+        genre: selectedMovie.genre,
+        duration: selectedMovie.duration,
+        language: selectedMovie.language,
+        description: selectedMovie.description,
+      });
+    }
+  }, [selectedMovie]);
+
+  // 🔁 Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 📤 Handle file upload
+  // 📷 Handle poster file
   const handleFileChange = (e) => {
     setPoster(e.target.files[0]);
   };
 
-  // 🚀 Handle form submission
+  // ✅ Submit handler (Add or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      console.log("📦 Submitting form data:", formData);
-      const res = await addMovieWithPoster(formData, poster);
-      console.log("✅ Movie added:", res.data);
+      if (isEditing) {
+        console.log("📤 Updating movie:", formData);
+        await updateMovieWithPoster(selectedMovie._id, formData, poster);
+        toast.success("✅ Movie updated successfully!");
+      } else {
+        console.log("📥 Adding new movie:", formData);
+        await addMovieWithPoster(formData, poster);
+        toast.success("🎉 Movie added successfully!");
+      }
 
-      toast.success("🎉 Movie added successfully!");
-      setFormData({ title: "", genre: "", duration: "", language: "", description: "" });
-      setPoster(null);
-
-      // 🔄 Call parent update function
+      // 🔁 Refresh parent component and close form
       onMovieAdded();
+      onClose();
     } catch (err) {
-      console.error("❌ Failed to add movie:", err.message);
-      toast.error("Failed to add movie.");
+      console.error("❌ Error submitting form:", err.message);
+      toast.error("Something went wrong while saving the movie.");
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-base-200 p-4 rounded shadow space-y-4 w-full max-w-2xl">
-      <h2 className="text-xl font-semibold">🎬 Add New Movie</h2>
+      <h2 className="text-xl font-semibold">
+        {isEditing ? "✏️ Edit Movie" : "🎬 Add New Movie"}
+      </h2>
 
-      {/* 🔤 Title */}
       <input
         type="text"
         name="title"
@@ -60,7 +78,6 @@ const AddMovieForm = ({ onMovieAdded }) => {
         required
       />
 
-      {/* 🎭 Genre */}
       <input
         type="text"
         name="genre"
@@ -71,7 +88,6 @@ const AddMovieForm = ({ onMovieAdded }) => {
         required
       />
 
-      {/* 🕐 Duration */}
       <input
         type="text"
         name="duration"
@@ -82,7 +98,6 @@ const AddMovieForm = ({ onMovieAdded }) => {
         required
       />
 
-      {/* 🌐 Language */}
       <input
         type="text"
         name="language"
@@ -93,7 +108,6 @@ const AddMovieForm = ({ onMovieAdded }) => {
         required
       />
 
-      {/* 📝 Description */}
       <textarea
         name="description"
         placeholder="Description"
@@ -103,16 +117,23 @@ const AddMovieForm = ({ onMovieAdded }) => {
         required
       ></textarea>
 
-      {/* 🖼️ Poster File Upload */}
+      {/* 📂 Only required if adding new or replacing existing poster */}
       <input
         type="file"
         accept="image/*"
         className="file-input file-input-bordered w-full"
         onChange={handleFileChange}
-        required
+        {...(!isEditing && { required: true })}
       />
 
-      <button type="submit" className="btn btn-primary w-full">Add Movie</button>
+      <div className="flex gap-4">
+        <button type="submit" className="btn btn-primary w-full">
+          {isEditing ? "Update Movie" : "Add Movie"}
+        </button>
+        <button type="button" className="btn btn-ghost w-full" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
     </form>
   );
 };

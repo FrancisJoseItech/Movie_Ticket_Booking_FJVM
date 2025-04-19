@@ -164,3 +164,187 @@ secure: Only over HTTPS (set true in production)
 sameSite: Prevents cross-site requests (CSRF)
 
 maxAge: Expiration time of 7 days
+
+
+## 📘 Full Stack Interaction Notes: AdminDashboard, AddMovieForm, adminServices
+🔷 1. AdminDashboard.jsx – Parent Component
+💡 Purpose:
+Displays the admin panel UI, shows all movies, allows admin to:
+
+View movie list
+
+Add new movie (via modal form)
+
+Edit existing movie
+
+Delete a movie
+
+🔗 Key State Variables:
+Variable	Purpose
+movies	Stores the list of movies from backend
+showAddMovie	Boolean: show or hide the Add/Edit form
+selectedMovie	Object: holds data of movie being edited (or null for Add)
+⚙️ Key Functions:
+✅ fetchMovies()
+
+const data = await getAllMovies();  // Fetch from backend
+setMovies(data);                    // Store in local state
+Called on first render (useEffect) and after Add/Edit/Delete
+Makes GET request via adminServices.js
+
+🗑️ handleDelete(movieId)
+
+await deleteMovie(movieId); // API call to delete
+fetchMovies();              // Refresh list after deletion
+🔐 handleFormClose()
+
+setShowAddMovie(false);     // Hide the form
+setSelectedMovie(null);     // Reset edit movie state
+📦 Props Passed to AddMovieForm
+
+<AddMovieForm
+  onClose={handleFormClose}
+  onMovieAdded={fetchMovies}
+  selectedMovie={selectedMovie}
+/>
+Prop	Sent to AddMovieForm	Meaning
+onClose	handleFormClose()	Used to hide the form
+onMovieAdded	fetchMovies()	Refresh the movie list
+selectedMovie	movie or null	Determines if Edit or Add mode
+
+🔷 2. AddMovieForm.jsx – Reusable Form Component
+💡 Purpose:
+Used to Add or Edit a movie
+
+Displays input fields + poster upload
+
+On submit, sends data to backend and informs parent
+
+🧠 Local State Variables:
+Variable	Purpose
+formData	Holds all text field values (title, genre, etc.)
+poster	File object of uploaded image
+isEditing	Boolean: derived from whether selectedMovie is present
+🧩 Pre-filling form on Edit
+
+useEffect(() => {
+  if (selectedMovie) {
+    setFormData({
+      title: selectedMovie.title,
+      ...
+    });
+  }
+}, [selectedMovie]);
+Runs once when editing is triggered — fills fields with movie details
+
+🧾 handleSubmit()
+
+if (isEditing) {
+  await updateMovieWithPoster(...);   // PUT
+} else {
+  await addMovieWithPoster(...);      // POST
+}
+onMovieAdded(); // 🔁 Call parent to refresh list
+onClose();      // ❌ Call parent to close form
+📤 File Upload
+
+const payload = new FormData();
+Object.entries(formData).forEach(([k, v]) => payload.append(k, v));
+payload.append("poster", posterFile);
+FormData is used to combine text + image in one request
+
+🔷 3. adminServices.js – API Calls
+This file contains the actual axios requests sent to the backend.
+
+📡 getAllMovies()
+
+GET /movies/
+→ Returns list of movies
+→ Called by fetchMovies() in AdminDashboard
+🆕 addMovieWithPoster()
+
+POST /movies/addmovie
+Content-Type: multipart/form-data
+Body: formData + poster file
+
+Called by: AddMovieForm → handleSubmit()
+✏️ updateMovieWithPoster()
+
+PUT /movies/:id
+Content-Type: multipart/form-data
+Body: formData + new poster (if provided)
+
+Called by: AddMovieForm → handleSubmit()
+🗑️ deleteMovie()
+
+DELETE /movies/:id
+
+Called by: AdminDashboard → handleDelete()
+🔄 End-to-End Interaction Flow
+➕ Add Movie Flow
+
+User clicks ➕ Add New Movie
+↓
+setShowAddMovie(true)
+↓
+<AddMovieForm /> appears
+↓
+User fills form & clicks Submit
+↓
+handleSubmit() calls addMovieWithPoster()
+↓
+API request POST /movies/addmovie
+↓
+Backend adds movie & returns success
+↓
+onMovieAdded() → fetchMovies() → refresh list
+↓
+onClose() → closes form
+
+✏️ Edit Movie Flow
+
+User clicks ✏️ Edit on a movie
+↓
+selectedMovie set → passed to <AddMovieForm />
+↓
+Form auto-fills via useEffect()
+↓
+User updates fields & submits
+↓
+handleSubmit() calls updateMovieWithPoster()
+↓
+API PUT /movies/:id
+↓
+Movie updated
+↓
+onMovieAdded() → fetchMovies()
+↓
+onClose() → closes form
+
+🗑️ Delete Movie Flow
+
+User clicks 🗑️ Delete
+↓
+handleDelete() → calls deleteMovie(movieId)
+↓
+API DELETE /movies/:id
+↓
+fetchMovies() → updates state
+↓
+List refreshed
+
+
+✅ Final Concepts Table
+Concept	Description
+Props	Data/functions passed from parent to child
+useEffect	Lifecycle hook to run logic on load or when props change
+useState	Creates and updates local state inside a component
+FormData	JavaScript API to bundle text and file data
+Content-Type: multipart/form-data	Header used when uploading files
+axiosInstance	Preconfigured Axios client to call APIs
+onMovieAdded()	Passed from AdminDashboard to refresh list after form submit
+onClose()	Passed to AddMovieForm to close itself after success
+selectedMovie	Null (add) or movie object (edit)
+fetchMovies()	Main refresh function used throughout
+handleSubmit()	Handles both Add and Edit logic
+handleChange()	Updates input fields dynamically
