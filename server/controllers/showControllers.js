@@ -72,7 +72,7 @@ const getAllShows = async (req, res) => {
       // ✅ Fetch all shows, populate movie & theater details
       const shows = await Show.find()
         .populate("movieId", "title genre duration language") // populate movie details
-        .populate("theaterId", "name location"); // populate theater details
+        .populate("theaterId", "name location totalSeats"); // populate theater details
   
       console.log("📽️ Retrieved All Shows:", shows.length);
   
@@ -102,9 +102,24 @@ const getPublicShows = async (req, res) => {
     }
   };
 
+  // delete shows 
+  const deleteShow = async (req, res) => {
+    try {
+      const deleted = await Show.findByIdAndDelete(req.params.id);
+      if (!deleted) return res.status(404).json({ message: "Show not found" });
+  
+      res.status(200).json({ message: "Show deleted successfully" });
+    } catch (err) {
+      console.error("❌ Error deleting show:", err.message);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+  
+
 module.exports = {
      addShow,
      getAllShows,
-     getPublicShows
+     getPublicShows,
+     deleteShow,
 
 };

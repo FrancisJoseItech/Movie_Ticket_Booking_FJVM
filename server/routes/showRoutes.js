@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { addShow, getAllShows, getPublicShows } = require("../controllers/showControllers");
+const { addShow, getAllShows, getPublicShows, deleteShow } = require("../controllers/showControllers");
 const { protect, authorizeRoles } = require("../middlewares/authMiddleware");
 
 // 🛡️ Protected route, only admin can add shows
@@ -11,5 +11,9 @@ router.get("/", protect, authorizeRoles("admin"), getAllShows);
 
 // 🌍 Public route - anyone can access
 router.get("/public", getPublicShows);
+
+// DELETE /api/shows/:id
+router.delete("/:id", protect, authorizeRoles("admin"), deleteShow);
+
 
 module.exports = router;

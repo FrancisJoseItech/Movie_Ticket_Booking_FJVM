@@ -90,7 +90,7 @@ export const addTheater = async (theaterData) => {
   return res.data;
 };
 
-// ✏️ PUT update theater by ID
+// ✏️ API call to update an existing theater by ID
 export const updateTheater = async (id, updatedData) => {
   const res = await axiosInstance.put(`/theaters/update/${id}`, updatedData);
   console.log("✏️ Theater updated:", res.data);
@@ -103,3 +103,30 @@ export const deleteTheater = async (id) => {
   console.log("🗑️ Theater deleted:", res.data);
   return res.data;
 };
+
+
+// 🌐 Get all shows (admin)
+export const getAllShows = async () => {
+  const res = await axiosInstance.get("/shows");
+  console.log("🎭 All shows fetched:", res.data);
+  return res.data;
+};
+
+
+// 🌟 Add new show API
+export const addShow = async (showData) => {
+  console.log("🎬 Sending show data to backend:", showData);
+  const res = await axiosInstance.post("/shows/addshow", showData);
+  console.log("✅ Show added:", res.data);
+  return res.data;
+};
+
+// ✅ Delete Show by ID (Admin only)
+export const deleteShow = async (showId) => {
+  console.log("🗑️ Deleting show:", showId);
+  const res = await axiosInstance.delete(`/shows/${showId}`);
+  console.log("✅ Show deleted:", res.data);
+  return res.data;
+};
+
+

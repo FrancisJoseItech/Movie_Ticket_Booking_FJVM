@@ -1,44 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-
-// ✅ API call to add a new theater
-import { addTheater } from "../../services/adminServices";
-
-// 🧠 Redux hook to get the logged-in user
 import { useSelector } from "react-redux";
 
-// 🧩 Component to add a theater (used by both admin and theater_owner)
-const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
-  // 🎯 Local form state
+// ✅ Import API functions
+import { addTheater, updateTheater } from "../../services/adminServices";
+
+/**
+ * 🎭 Reusable Form for Adding and Editing Theaters
+ * Props:
+ * - onClose: function to close/hide the form
+ * - onTheaterAdded: callback to refresh the parent theater list
+ * - theaterOwners: list of users with role 'theater_owner' (for admin dropdown)
+ * - selectedTheater (optional): if passed, switches to Edit mode
+ */
+const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners, selectedTheater }) => {
+  // 📦 Form state
   const [formData, setFormData] = useState({
     name: "",
     location: "",
     totalSeats: "",
-    owner: "", // Admin will select this from dropdown
+    owner: "", // admin will select from dropdown
   });
 
-  // 🔐 Logged-in user info (used to determine role)
+  // 🔐 Get logged-in user info from Redux
   const { user } = useSelector((state) => state.auth);
 
-  // 🔁 Handle field change
+  // ✏️ If editing, prefill form with selectedTheater data
+  useEffect(() => {
+    if (selectedTheater) {
+      console.log("✏️ Pre-filling edit form with:", selectedTheater);
+      setFormData({
+        name: selectedTheater.name || "",
+        location: selectedTheater.location || "",
+        totalSeats: selectedTheater.totalSeats || "",
+        owner: selectedTheater.owner || "",
+      });
+    }
+  }, [selectedTheater]);
+
+  // 🔁 Handle changes in input fields
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🚀 Form submit handler
+  // 🚀 Form Submit Handler (Handles Both Add and Update)
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Stop page reload
-    console.log("🏢 Submitting theater:", formData); // Debug
+    e.preventDefault(); // Prevent page reload
+    console.log("📤 Submitting form data:", formData);
 
     try {
-      await addTheater(formData); // 📡 Call backend
-      toast.success("🎉 Theater added successfully!");
+      if (selectedTheater) {
+        // ✏️ Edit Mode
+        console.log("🔄 Updating theater ID:", selectedTheater._id);
+        await updateTheater(selectedTheater._id, formData);
+        toast.success("✅ Theater updated successfully!");
+      } else {
+        // ➕ Add Mode
+        console.log("➕ Creating new theater...");
+        await addTheater(formData);
+        toast.success("✅ Theater added successfully!");
+      }
 
-      onTheaterAdded(); // 🔄 Tell parent to refresh theater list
-      onClose();        // 🔐 Close form
+      onTheaterAdded(); // 🔁 Refresh the parent component list
+      onClose();        // 🔐 Close the form
     } catch (err) {
-      console.error("❌ Failed to add theater:", err.message);
-      toast.error("Failed to add theater.");
+      console.error("❌ Error submitting theater:", err.message);
+      toast.error("Failed to save theater. Please try again.");
     }
   };
 
@@ -47,9 +74,11 @@ const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
       onSubmit={handleSubmit}
       className="bg-base-200 p-4 rounded shadow space-y-4 w-full max-w-2xl"
     >
-      <h2 className="text-xl font-semibold">🏢 Add New Theater</h2>
+      <h2 className="text-xl font-semibold">
+        {selectedTheater ? "✏️ Edit Theater" : "🏢 Add New Theater"}
+      </h2>
 
-      {/* 🎭 Theater Name */}
+      {/* 🎭 Theater Name Input */}
       <input
         type="text"
         name="name"
@@ -60,7 +89,7 @@ const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
         required
       />
 
-      {/* 📍 Location */}
+      {/* 🗺️ Location Input */}
       <input
         type="text"
         name="location"
@@ -71,7 +100,7 @@ const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
         required
       />
 
-      {/* 💺 Seats */}
+      {/* 💺 Total Seats */}
       <input
         type="number"
         name="totalSeats"
@@ -82,7 +111,7 @@ const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
         required
       />
 
-      {/* 👑 Owner Dropdown – Shown ONLY to Admins */}
+      {/* 👤 Theater Owner Dropdown - Visible only to Admin */}
       {user?.role === "admin" && (
         <select
           name="owner"
@@ -92,20 +121,27 @@ const AddTheaterForm = ({ onClose, onTheaterAdded, theaterOwners }) => {
           required
         >
           <option value="">Select Theater Owner</option>
-          {theaterOwners?.map((o) => (
-            <option key={o._id} value={o._id}>
-              {o.name} ({o.email})
+          {theaterOwners?.map((owner) => (
+            <option key={owner._id} value={owner._id}>
+              {owner.name} ({owner.email})
             </option>
           ))}
         </select>
       )}
 
-      {/* ✅ Buttons */}
+      {/* 🔘 Submit + Cancel */}
       <div className="flex gap-4">
         <button type="submit" className="btn btn-primary w-full">
-          Add Theater
+          {selectedTheater ? "Update Theater" : "Add Theater"}
         </button>
-        <button type="button" className="btn btn-ghost w-full" onClick={onClose}>
+        <button
+          type="button"
+          className="btn btn-ghost w-full"
+          onClick={() => {
+            console.log("🔒 Cancel clicked – Closing form.");
+            onClose();
+          }}
+        >
           Cancel
         </button>
       </div>
