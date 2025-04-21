@@ -29,7 +29,7 @@ app.use(cookieParser());
 // Enable Cross-Origin Resource Sharing (for frontend access)
 
 app.use(cors({
-  origin: "http://localhost:5174",  // frontend port
+  origin: "http://localhost:5175",  // frontend port
   credentials: true                // allow cookies/auth headers
 }));
 
