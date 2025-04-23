@@ -4,6 +4,7 @@ const Theater = require("../model/theaterModel");
 // @desc    Add a new show (Admin or Theater Owner)
 // @route   POST /api/shows/addshow
 // @access  Admin or Theater Owner
+
 const addShow = async (req, res) => {
     const { movieId, theaterId, date, time, price } = req.body;
   
@@ -84,23 +85,23 @@ const getAllShows = async (req, res) => {
   };
 
 
-  // 📽️ Get all public shows (for users to browse)
+ // 🎯 Controller: Get all upcoming public shows
 const getPublicShows = async (req, res) => {
-    try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  
-      // 🌐 Fetch future shows and populate movie and theater details
-      const shows = await Show.find({ date: { $gte: today } })
-        .populate("movieId", "title genre duration language posterUrl")
-        .populate("theaterId", "name location");
-  
-      console.log("🎟️ Public Shows Fetched:", shows.length);
-      res.status(200).json(shows);
-    } catch (err) {
-      console.error("❌ Error in getPublicShows:", err.message);
-      res.status(500).json({ message: "Server error while fetching shows" });
-    }
-  };
+  try {
+    const now = new Date();
+
+    // ⏳ Only include shows that are scheduled for a future date
+    const shows = await Show.find({ date: { $gt: now } })
+      .populate("movieId", "title posterUrl genre duration language")
+      .populate("theaterId", "name location totalSeats");
+
+    console.log("🎟️ Public Shows Fetched:", shows.length);
+    res.status(200).json(shows);
+  } catch (err) {
+    console.error("❌ Error fetching public shows:", err.message);
+    res.status(500).json({ message: "Server error while fetching shows" });
+  }
+};
 
   // delete shows 
   const deleteShow = async (req, res) => {

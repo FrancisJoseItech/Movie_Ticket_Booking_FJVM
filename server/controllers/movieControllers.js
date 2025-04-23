@@ -71,21 +71,26 @@ const addMovie = async (req, res) => {
 // @route   GET /api/movies
 // @access  Public
 const getAllMovies = async (req, res) => {
-    try {
-      console.log("🎬 Fetching all movies...");
-  
-      // 🔍 Fetch all movie documents from DB
-      const movies = await Movie.find();
-  
-      console.log(`✅ ${movies.length} movies found.`);
-  
-      // 📤 Send response
-      res.status(200).json(movies);
-    } catch (err) {
-      console.error("❌ Error fetching movies:", err.message);
-      res.status(500).json({ message: "Server error while fetching movies" });
-    }
-  };
+  try {
+    const today = new Date();
+
+    const movies = await Movie.find()
+      .populate({
+        path: "shows",
+        match: { date: { $gte: today } }, // Only upcoming shows
+        populate: [
+          { path: "theaterId", select: "name location" },
+          { path: "movieId", select: "title" },
+        ],
+      });
+
+    console.log("🎬 Populated movies with upcoming shows:", movies.length);
+    res.status(200).json(movies);
+  } catch (err) {
+    console.error("❌ Error fetching movies with shows:", err.message);
+    res.status(500).json({ message: "Error fetching movies" });
+  }
+};
 
  // ✏️ Update movie by ID (Admin only)
  const updateMovie = async (req, res) => {

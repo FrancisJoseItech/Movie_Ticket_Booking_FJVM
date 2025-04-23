@@ -8,8 +8,13 @@ import AboutPage from "../pages/AboutPage";
 import ShowPage from "../pages/ShowsPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import UserDashboard from "../pages/Userdashboard";
-import TheaterDashboard from "../pages/TheaterDashboard";
 import HomePage from "../pages/Homepage";
+import TheaterOwnerDashboard from "../pages/theater/TheaterOwnerDashboard";
+import { theaterOwnerLoader } from "../loaders/theaterOwnerLoader"; // 👈 Import loader
+
+import BookShowPage from "../pages/BookShowPage";
+
+import PaymentSuccess from "../pages/PaymentSuccess";
 
 
 
@@ -27,9 +32,17 @@ export const router = createBrowserRouter([
         // ✅ Newly added dashboard/profile routes
         { path: "admin/dashboard", element: <AdminDashboard /> },
         { path: "user/dashboard", element: <UserDashboard/> },
-        { path: "theater/dashboard", element: <TheaterDashboard /> },
+        { path: "theater/dashboard", element: <TheaterOwnerDashboard/>,
+           loader: theaterOwnerLoader,}, // 🚀 Load data before render 
         
-
+        {
+          path: "/book/:showId",
+          element: <BookShowPage/>,
+        },
+        {
+          path: "payment-success",
+          element: <PaymentSuccess/>,
+        },
       ],
     },
   ]);

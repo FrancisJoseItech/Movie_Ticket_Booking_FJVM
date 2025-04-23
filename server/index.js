@@ -13,6 +13,7 @@ const showRoutes = require("./routes/showRoutes");
 const movieRoutes = require("./routes/movieRoutes");
 const theaterRoutes = require("./routes/theaterRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 // Load environment variables from .env
 dotenv.config();
@@ -29,7 +30,7 @@ app.use(cookieParser());
 // Enable Cross-Origin Resource Sharing (for frontend access)
 
 app.use(cors({
-  origin: "http://localhost:5175",  // frontend port
+  origin: "http://localhost:5173",  // frontend port
   credentials: true                // allow cookies/auth headers
 }));
 
@@ -46,6 +47,8 @@ app.use("/api/movies", movieRoutes);
 app.use("/api/theaters", theaterRoutes);
 // Route middleware - handles all routes starting with /api/bookings
 app.use("/api/bookings",bookingRoutes);
+// Route middleware - handles all routes starting with /api/payment
+app.use("/api/payment", paymentRoutes);
 
 // Start the server on PORT defined in .env
 const PORT = process.env.PORT || 9000;
