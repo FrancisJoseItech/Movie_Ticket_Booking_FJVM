@@ -7,7 +7,7 @@ import { createBrowserRouter } from "react-router-dom";
 import AboutPage from "../pages/AboutPage";
 import ShowPage from "../pages/ShowsPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
-import UserDashboard from "../pages/Userdashboard";
+import UserDashboard from "../pages/UserDashboard";
 import HomePage from "../pages/HomePage";
 import TheaterOwnerDashboard from "../pages/theater/TheaterOwnerDashboard";
 import { theaterOwnerLoader } from "../loaders/theaterOwnerLoader"; // 👈 Import loader
