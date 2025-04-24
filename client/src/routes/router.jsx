@@ -3,7 +3,7 @@ import Login from "../pages/Auth/Login";
 import Signup from "../pages/Auth/Signup";
 
 import { createBrowserRouter } from "react-router-dom";
-import Homepage from "../pages/Homepage";
+
 import AboutPage from "../pages/AboutPage";
 import ShowPage from "../pages/ShowsPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
