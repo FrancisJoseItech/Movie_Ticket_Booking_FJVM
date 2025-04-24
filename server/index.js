@@ -30,16 +30,16 @@ app.use(cookieParser());
 // Enable Cross-Origin Resource Sharing (for frontend access)
 
 app.use(cors({
-  origin: "https://fjvmbookingapp-fa9vh119t-francis-joses-projects.vercel.app/",  // frontend port // frontend port updated with versel domain
+  origin: "https://fjvmbookingapp.vercel.app/",  // frontend port // later cors is updated with versel frontend domain
   credentials: true                // allow cookies/auth headers
 }));
 
 // Enable JSON parsing for incoming requests
 app.use(express.json());
 
-// ✅ Test route to check if backend is up
+// Test Check
 app.get("/", (req, res) => {
-  res.json("✅ Server is working fine!");
+  res.json("Server Hitted");
 });
 
 // Route middleware - handles all routes starting with /api/user
