@@ -30,7 +30,7 @@ app.use(cookieParser());
 // Enable Cross-Origin Resource Sharing (for frontend access)
 
 app.use(cors({
-  origin: "http://localhost:5173",  // frontend port
+  origin: "https://fjvmbookingapp-fa9vh119t-francis-joses-projects.vercel.app/",  // frontend port // frontend port updated with versel domain
   credentials: true                // allow cookies/auth headers
 }));
 
