@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom"; // to render nested routes
 import Navbar from "../components/Navbar"; // adjust if your Navbar is elsewhere
+import Footer from "../components/common/Footer";
 
 const UserLayout = () => {
   return (
@@ -11,6 +12,7 @@ const UserLayout = () => {
       <Outlet />
 
       {/* ✅ Optional: Footer can go here */}
+      <Footer/>
     </div>
   );
 };

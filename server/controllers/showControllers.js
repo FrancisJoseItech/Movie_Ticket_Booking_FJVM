@@ -115,6 +115,44 @@ const getPublicShows = async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
   };
+
+// ✅ Controller to fetch a single show by ID with full movie and theater info
+const getShowById = async (req, res) => {
+  try {
+    const show = await Show.findById(req.params.id)
+      .populate("movieId", "title posterUrl genre duration language") // ✅ Get full movie object
+      .populate("theaterId", "name location totalSeats");             // ✅ Get full theater info
+
+    if (!show) {
+      return res.status(404).json({ message: "Show not found" });
+    }
+
+    console.log("🎯 Single Show Fetched:", show.movieId?.title);
+    res.status(200).json(show);
+  } catch (err) {
+    console.error("❌ Error fetching show by ID:", err.message);
+    res.status(500).json({ message: "Error fetching show by ID" });
+  }
+};
+
+
+
+// 🎯 Get shows for theaters owned by a specific theater owner
+const getShowsForOwner = async (req, res) => {
+  try {
+    const shows = await Show.find({ theaterId: { $in: req.user.theatersOwned } })
+      .populate("movieId", "title posterUrl")
+      .populate("theaterId", "name location");
+
+    console.log("🎟️ Fetched shows for owner:", req.user._id);
+    res.status(200).json(shows);
+  } catch (err) {
+    console.error("❌ Error fetching owner's shows:", err.message);
+    res.status(500).json({ message: "Server error while fetching shows" });
+  }
+};
+
+module.exports = { getShowsForOwner };
   
 
 module.exports = {
@@ -122,5 +160,7 @@ module.exports = {
      getAllShows,
      getPublicShows,
      deleteShow,
+     getShowById,
+     getShowsForOwner,
 
 };

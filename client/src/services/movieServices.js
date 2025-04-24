@@ -12,3 +12,9 @@ export const getAllMovies = async () => {
     throw error;
   }
 };
+
+// 📡 Service: Get movie by ID
+export const getMovieById = async (id) => {
+    const res = await axiosInstance.get(`/movies/${id}`);
+    return res.data;
+  };

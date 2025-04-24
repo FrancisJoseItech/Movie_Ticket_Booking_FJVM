@@ -1,49 +1,39 @@
-// ✅ MovieCard.jsx - Displays individual movie info with Book button
+// 📁 src/components/movie/MovieCard.jsx
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 
-// 🧾 Props: movie object comes from HomePage
+// 🧾 Props received from HomePage: movie (object with full details + hasUpcomingShow flag)
 const MovieCard = ({ movie }) => {
-  console.log("🎬 MovieCard props received:", movie); // ✅ Should include hasUpcomingShow
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth); // 🔐 Check login
 
-  // 🧭 When Book button is clicked
-  const handleBookClick = () => {
-    if (!user) {
-      console.warn("⚠️ Not logged in. Redirecting to login...");
-      return navigate("/login", {
-        state: { redirectTo: `/shows?movieId=${movie._id}` }, // 📌 Go back after login
-      });
-    }
-
-    navigate(`/shows?movieId=${movie._id}`); // ✅ Proceed to Show listing
+  // 🧭 When poster is clicked → go to Movie Details Page
+  const handlePosterClick = () => {
+    console.log("🖼️ Poster clicked for:", movie.title);
+    navigate(`/movies/${movie._id}`);
   };
 
   return (
-    <div className="card bg-base-100 shadow-md p-4 rounded-md w-full">
-      {/* 🖼️ Poster */}
+    <div className="card bg-base-100 shadow-md p-4 rounded-xl">
+      {/* 🖼️ Movie Poster (Clickable) */}
       <img
-        src={movie.posterUrl}
-        alt={`${movie.title} Poster`}
-        className="w-full h-60 object-cover rounded mb-3"
+        src={movie.posterUrl || "/default-movie.jpg"} // 🔄 Fallback poster if not present
+        alt={`${movie.title} Poster`}                 // ✅ Accessibility
+        className="w-full h-64 object-contain rounded-xl"
+        onClick={handlePosterClick}                   // 📦 Click to navigate to MovieDetailsPage
       />
 
-      {/* 🎬 Title */}
-      <h2 className="text-lg font-semibold">{movie.title}</h2>
+      {/* 🎬 Movie Info */}
+      <h2 className="text-lg font-semibold mt-2">{movie.title}</h2>
+      <p className="text-sm text-gray-500 capitalize">🎭 {movie.genre}</p>
+      <p className="text-xs text-gray-400 mt-1">🕒 {movie.duration} min • {movie.language}</p>
 
-      {/* 🧾 Genre */}
-      <p className="text-sm text-gray-500 capitalize">{movie.genre}</p>
-
-      {/* ⏱️ Duration + Language */}
-      <p className="text-xs text-gray-400 mt-1">
-        ⏱️ {movie.duration} min • {movie.language}
-      </p>
-
-      {/* 📅 Booking or fallback message */}
+      {/* 📅 Availability Check */}
       {movie.hasUpcomingShow ? (
-        <button onClick={handleBookClick} className="btn btn-primary mt-3">
+        <button
+          className="btn btn-primary mt-3"
+          onClick={() => navigate(`/shows?movieId=${movie._id}`)}
+        >
           🎟️ Book Now
         </button>
       ) : (

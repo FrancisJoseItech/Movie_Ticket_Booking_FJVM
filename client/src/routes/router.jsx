@@ -15,6 +15,7 @@ import { theaterOwnerLoader } from "../loaders/theaterOwnerLoader"; // 👈 Impo
 import BookShowPage from "../pages/BookShowPage";
 
 import PaymentSuccess from "../pages/PaymentSuccess";
+import MovieDetailsPage from "../pages/MovieDetailsPage";
 
 
 
@@ -29,12 +30,17 @@ export const router = createBrowserRouter([
         { path: "shows", element: <ShowPage/> },
         { path: "login", element: <Login/> },
         { path: "register", element: < Signup/> },
-        // ✅ Newly added dashboard/profile routes
+
+        // 🧭 Movie details route (💡 show full movie info and its upcoming shows)
+      { path: "movies/:movieId", element: <MovieDetailsPage /> },
+
+        // ✅ Dashboard/profile pages
         { path: "admin/dashboard", element: <AdminDashboard /> },
         { path: "user/dashboard", element: <UserDashboard/> },
         { path: "theater/dashboard", element: <TheaterOwnerDashboard/>,
            loader: theaterOwnerLoader,}, // 🚀 Load data before render 
         
+         // ✅ Booking and Payment
         {
           path: "/book/:showId",
           element: <BookShowPage/>,

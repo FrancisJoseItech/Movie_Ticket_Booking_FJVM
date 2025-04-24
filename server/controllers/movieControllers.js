@@ -158,9 +158,26 @@ const deleteMovie = async (req, res) => {
     }
   };
 
+  // 📦 Controller: Get movie by ID
+const getMovieById = async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id);
+    if (!movie) {
+      return res.status(404).json({ message: "Movie not found" });
+    }
+
+    res.status(200).json(movie);
+  } catch (err) {
+    console.error("❌ Failed to fetch movie by ID:", err.message);
+    res.status(500).json({ message: "Server error while fetching movie" });
+  }
+};
+
+
 module.exports = {
-     addMovie,
+    addMovie,
     getAllMovies,
     updateMovie,
-    deleteMovie
+    deleteMovie,
+    getMovieById,
     };

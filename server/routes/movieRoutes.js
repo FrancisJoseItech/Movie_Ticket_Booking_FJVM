@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { addMovie, getAllMovies, updateMovie, deleteMovie } = require("../controllers/movieControllers");
+const { addMovie, getAllMovies, updateMovie, deleteMovie, getMovieById } = require("../controllers/movieControllers");
 const { protect, authorizeRoles } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer"); // ✅ Multer for image upload
 
@@ -11,5 +11,8 @@ router.delete("/:id", protect, authorizeRoles("admin"), deleteMovie);
 
 // 🌐 Public route to fetch all movies
 router.get("/", getAllMovies );
+
+// 📥 Get movie by ID (used in MovieDetailsPage)
+router.get("/:id", getMovieById);
 
 module.exports = router;

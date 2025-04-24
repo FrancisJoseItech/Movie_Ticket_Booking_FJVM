@@ -2,37 +2,51 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "sonner"; // 🔔 Toast notifications
+import { useSelector } from "react-redux"; // 🔐 Get user info from Redux
+import SeatSelector from "../components/seats/SeatSelector"; // 🪑 Seat selector component
+
+// 📡 Backend API services
+import { getShowById, createCheckoutSession } from "../services/showServices";
+
+// 💳 Stripe integration
 import { loadStripe } from "@stripe/stripe-js";
-
-// 📦 Import service functions instead of direct axios
-import { getPublicShows, createCheckoutSession } from "../services/showServices";
-
-// 🔑 Load Stripe with publishable key from .env (via Vite)
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY); // ✅ Replace with your Stripe key
 
 const BookShowPage = () => {
-  // 🎯 Extract showId from route params
+  // 🎯 Extract show ID from URL
   const { showId } = useParams();
   const navigate = useNavigate();
 
-  // 🎬 State to hold show details
+  // 🔐 Auth info from Redux store
+  const { user } = useSelector((state) => state.auth);
+
+  // 🎬 Store fetched show details
   const [show, setShow] = useState(null);
 
-  // 🎟️ State for selected seats by the user
+  // 🪑 Seats selected by user
   const [selectedSeats, setSelectedSeats] = useState([]);
 
-  // 🌀 Loader state
+  // ⚙️ Loader state
   const [loading, setLoading] = useState(true);
 
-  // 📥 Fetch show info on mount
+  // 🔐 Redirect to login if user not logged in
+  useEffect(() => {
+    if (!user) {
+      toast.warning("Please login to book your seat.");
+      navigate("/login", {
+        state: { redirectTo: `/book/${showId}` },
+      });
+    }
+  }, [user, navigate, showId]);
+
+  // 📥 Fetch show details on mount
   useEffect(() => {
     const fetchShow = async () => {
       try {
-        const data = await getPublicShows(); // ✅ Use service function
-        const found = data.find((s) => s._id === showId);
-        setShow(found);
-        console.log("🎬 Loaded show:", found);
+        const data = await getShowById(showId);
+        console.log("🎬 Loaded show details:", data);
+        setShow(data);
       } catch (err) {
         console.error("❌ Error loading show:", err.message);
         toast.error("Failed to load show. Try again.");
@@ -41,87 +55,78 @@ const BookShowPage = () => {
       }
     };
 
-    fetchShow();
-  }, [showId]);
+    if (user) fetchShow();
+  }, [showId, user]);
 
-  // 🎯 Toggle seat selection
+  // 🎯 Handle user clicking a seat
   const handleSeatClick = (seat) => {
     setSelectedSeats((prev) =>
-      prev.includes(seat)
-        ? prev.filter((s) => s !== seat) // ❌ Deselect seat
-        : [...prev, seat]               // ✅ Add seat to selection
+      prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
     );
     console.log("🪑 Seat clicked:", seat);
   };
 
-  // 💳 Trigger Stripe checkout on click
+  // 💳 Stripe checkout
   const handleBookNow = async () => {
     if (selectedSeats.length === 0) {
       toast.warning("Please select at least one seat.");
       return;
     }
 
-    console.log("🧾 Proceeding to Stripe with:", {
+    console.log("💳 Booking initiated:", {
       showId,
       selectedSeats,
       totalPrice: selectedSeats.length * show.price,
     });
 
     try {
-      const { id: sessionId } = await createCheckoutSession(showId, selectedSeats); // ✅ Use service
+      const { id: sessionId } = await createCheckoutSession(showId, selectedSeats);
       const stripe = await stripePromise;
       await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
-      console.error("❌ Stripe redirect failed:", err.message);
-      toast.error("Failed to initiate payment. Try again.");
+      console.error("❌ Stripe session failed:", err.message);
+      toast.error("Failed to initiate payment.");
     }
   };
 
-  // 🌀 Loading screen
+  // 🌀 If still loading
   if (loading) return <div className="p-6">⏳ Loading show details...</div>;
 
-  // 🚫 Show not found
+  // 🚫 If show not found
   if (!show) return <div className="p-6 text-red-500">🚫 Show not found</div>;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* 🎬 Show Details */}
-      <h1 className="text-3xl font-bold mb-2">🎬 {show.movieId?.title || "Movie Show"}</h1>
+      {/* 🎬 Show Header */}
+      <h1 className="text-3xl font-bold mb-2">
+        🎬 {show.movieId?.title || "Movie Show"}
+      </h1>
+
+      {/* 🖼️ Poster */}
+      <img
+        src={show.movieId?.posterUrl || "/default-movie.jpg"}
+        alt="Poster"
+        className="w-full max-w-xs rounded shadow mb-4"
+      />
+
+      {/* 📅 Show Details */}
       <p className="mb-4 text-gray-600">
-        🏢 <strong>{show.theaterId?.name}</strong> | 📅 {show.date} | ⏰ {show.time} | 💰 ₹{show.price} per seat
+        🏢 <strong>{show.theaterId?.name}</strong> | 📅 {new Date(show.date).toLocaleDateString()} | ⏰ {show.time} | 💰 ₹{show.price} per seat
       </p>
 
-          {/* 🪑 Seat Grid */}
-          {/* 🪑 Dynamic Seat Grid Based on Theater Capacity */}
-          <div className="grid grid-cols-8 gap-2 mb-6">
-              {[...Array(show?.theaterId?.totalSeats || 40)].map((_, i) => {
-                  const seat = `S${i + 1}`;
-                  const isBooked = show.bookedSeats.includes(seat);
-                  const isSelected = selectedSeats.includes(seat);
+      {/* 🪑 Seat Selector */}
+      <SeatSelector
+        totalSeats={show.theaterId?.totalSeats || 100} // 📤 Prop: total theater capacity
+        bookedSeats={show.bookedSeats || []}           // 📤 Prop: seats already booked
+        selectedSeats={selectedSeats}                  // 📤 Prop: user's selected seats
+        onSeatClick={handleSeatClick}                  // 📤 Prop: callback for toggling
+      />
 
-                  return (
-                      <button
-                          key={seat}
-                          className={`border px-4 py-2 rounded font-medium ${isBooked
-                                  ? "bg-red-400 text-white cursor-not-allowed"
-                                  : isSelected
-                                      ? "bg-green-500 text-white"
-                                      : "hover:bg-green-100"
-                              }`}
-                          onClick={() => handleSeatClick(seat)}
-                          disabled={isBooked}
-                      >
-                          {seat}
-                      </button>
-                  );
-              })}
-          </div>
-
-      {/* 💳 Pay & Book Button */}
+      {/* 💳 Confirm Booking */}
       <button
-        className="btn btn-primary w-full"
         onClick={handleBookNow}
         disabled={selectedSeats.length === 0}
+        className="btn btn-primary w-full"
       >
         💳 Pay ₹{selectedSeats.length * show.price} & Book Now
       </button>

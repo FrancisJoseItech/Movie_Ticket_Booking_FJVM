@@ -37,6 +37,11 @@ app.use(cors({
 // Enable JSON parsing for incoming requests
 app.use(express.json());
 
+// ✅ Test route to check if backend is up
+app.get("/", (req, res) => {
+  res.json("✅ Server is working fine!");
+});
+
 // Route middleware - handles all routes starting with /api/user
 app.use('/api/user', userRoutes);
 // Route middleware - handles all routes starting with /api/shows
