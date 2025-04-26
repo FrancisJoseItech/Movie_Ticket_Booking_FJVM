@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { addMovieWithPoster, updateMovieWithPoster } from "../../services/adminServices";
 
+// receiving props from the parent AdminDashboard
 const AddMovieForm = ({ onClose, onMovieAdded, selectedMovie }) => {
   // 🧠 Local state for form fields
   const [formData, setFormData] = useState({
@@ -117,14 +118,20 @@ const AddMovieForm = ({ onClose, onMovieAdded, selectedMovie }) => {
         required
       ></textarea>
 
-      {/* 📂 Only required if adding new or replacing existing poster */}
-      <input
-        type="file"
-        accept="image/*"
-        className="file-input file-input-bordered w-full"
-        onChange={handleFileChange}
-        {...(!isEditing && { required: true })}
-      />
+          {/* 📂 Only required if adding new or replacing existing poster */}
+          {/* 📂 Poster Upload (Optional) */}
+          <div className="form-control">
+              <label className="label-text text-sm text-gray-500 mb-2">
+                  {/* (Optional) Upload poster image */}
+              </label>
+              <input
+                  type="file"
+                  accept="image/*"
+                  className="file-input file-input-bordered w-full"
+                  onChange={handleFileChange}
+              {...(!isEditing && { required: true })}
+              />
+          </div>
 
       <div className="flex gap-4">
         <button type="submit" className="btn btn-primary w-full">

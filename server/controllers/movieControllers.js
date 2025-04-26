@@ -1,67 +1,76 @@
 const Movie = require("../model/movieModel");
 
-// 🎬 Add Movie with Cloudinary Poster Upload (Admin Only)
 const fs = require("fs");
-const uploadToCloudinary = require("../utilities/uploadToCloudinary"); // ✅ Must match the export
+const uploadToCloudinary = require("../utilities/uploadToCloudinary"); // ✅ Cloudinary upload utility
 
 
-// 🎬 Add Movie (Admin Only)
+
+// 🎬 Add Movie with (optional) Poster Upload (Admin Only)
 const addMovie = async (req, res) => {
   try {
+    // 🧠 Extracting fields from request body
     const { title, genre, duration, language, description } = req.body;
-
     console.log("📥 Add Movie Request Body:", req.body);
 
-    // ❗ Validate required fields
+    // ❗ Step 1: Validate required fields
     if (!title || !genre || !duration || !language || !description) {
-      return res.status(400).json({ message: "All movie fields are required." });
+      console.log("⚠️ Missing required fields");
+      return res.status(400).json({ message: "All movie fields (title, genre, duration, language, description) are required." });
     }
 
-    // 🔍 Check for duplicate movie
+    // 🔍 Step 2: Check if movie already exists
     const existingMovie = await Movie.findOne({ title });
     if (existingMovie) {
+      console.log("⚠️ Duplicate Movie Title:", title);
       return res.status(400).json({ message: "Movie already exists with the same title." });
     }
 
-    let posterUrl = "";
+    let posterUrl = ""; // 🌟 Initialize poster URL as empty
+
+    // 🖼️ Step 3: If poster file is provided, upload to Cloudinary
     if (req.file) {
       const localPath = req.file.path;
       console.log("🖼️ Poster File Path:", localPath);
 
       try {
-        console.log("📤 Calling uploadToCloudinary...");
-        posterUrl = await uploadToCloudinary(localPath);
-        console.log("🌐 Cloudinary URL returned:", posterUrl);
-      
-        fs.unlinkSync(localPath);
-        console.log("🧹 Local file deleted:", localPath);
-      } catch (cloudErr) {
-        console.error("❌ Cloudinary Upload Error:", cloudErr);
-        return res.status(500).json({ message: "Cloudinary upload failed" });
-      }
+        console.log("📤 Uploading poster to Cloudinary...");
+        posterUrl = await uploadToCloudinary(localPath, "fjvm-posters"); // 👈 (optional) you can pass folder
+        console.log("🌐 Cloudinary Upload Success, URL:", posterUrl);
 
+        // 🧹 Delete the file from local uploads/ folder after uploading to Cloudinary
+        fs.unlinkSync(localPath);
+        console.log("🧹 Local file deleted successfully:", localPath);
+
+      } catch (cloudErr) {
+        console.error("❌ Cloudinary Upload Error:", cloudErr.message || cloudErr);
+        // 👇 Instead of failing the whole request, just continue WITHOUT poster
+        posterUrl = ""; 
+      }
+    } else {
+      console.log("ℹ️ No poster uploaded with this movie.");
     }
 
-    // 💾 Create and save movie
+    // 💾 Step 4: Create new movie document
     const newMovie = new Movie({
       title,
       genre,
       duration,
       language,
       description,
-      posterUrl,
+      posterUrl, // 🖼️ Save posterUrl if available, otherwise empty string
     });
 
     const savedMovie = await newMovie.save();
-
     console.log("✅ Movie saved successfully:", savedMovie);
+
+    // 📤 Step 5: Send success response
     res.status(201).json({
-      message: "Movie added successfully",
+      message: "✅ Movie added successfully",
       movie: savedMovie,
     });
 
   } catch (err) {
-    console.error("❌ Error adding movie:", err.message);
+    console.error("❌ Server Error while adding movie:", err.message);
     res.status(500).json({ message: "Server error while adding movie" });
   }
 };
