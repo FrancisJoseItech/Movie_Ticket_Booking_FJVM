@@ -4,3 +4,48 @@
 /* @tailwind base;
 @tailwind components;
 @tailwind utilities; */
+
+/* 🔥 Custom Keyframes Animation */
+@keyframes rollAndMove {
+    0% {
+      transform: rotate(0deg) translateX(0) scale(1);
+      color: inherit;
+    }
+    25% {
+      transform: rotate(15deg) translateX(10px) scale(1.05);
+      color: orange;
+    }
+    50% {
+      transform: rotate(0deg) translateX(0) scale(1);
+      color: purple;
+    }
+    75% {
+      transform: rotate(-15deg) translateX(-10px) scale(1.05);
+      color: orange;
+    }
+    100% {
+      transform: rotate(0deg) translateX(0) scale(1);
+      color: inherit;
+    }
+  }
+  
+  .hover-roll-move:hover {
+    animation: rollAndMove 2s ease-in-out infinite;
+  }
+
+  /* 🎬 Page Load Fade and Drop Keyframes */
+@keyframes fadeInDrop {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* 🎬 Animation Class */
+  .page-load-fadein {
+    animation: fadeInDrop 1s ease-out forwards;
+  }

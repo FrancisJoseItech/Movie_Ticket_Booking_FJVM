@@ -16,15 +16,20 @@ const TheaterOwnerDashboard = () => {
 
   const [allShows, setAllShows] = useState([]); // 🎟️ All fetched shows
 
+  const [loadingShows, setLoadingShows] = useState(true); // 🚦 Spinner control
+
   // 🧠 Fetch shows (used inside useEffect and after add)
   const fetchShows = async () => {
     try {
-      const data = await getPublicShows(); // ✅ Get all future shows
-      setAllShows(data); // 💾 Save in state
+      setLoadingShows(true); // 🛜 Start loading
+      const data = await getPublicShows();
+      setAllShows(data);
       console.log("🎟️ Refreshed show list:", data);
     } catch (err) {
       console.error("❌ Failed to fetch shows:", err.message);
       toast.error("Could not fetch shows.");
+    } finally {
+      setLoadingShows(false); // 🛑 Stop loading
     }
   };
 
@@ -44,39 +49,73 @@ const TheaterOwnerDashboard = () => {
 
       <h2 className="text-xl font-semibold mb-3">🏢 Your Theaters & Shows</h2>
 
-      {/* 🏢 Render owned theaters + related shows */}
-      {ownedTheaters.length === 0 ? (
-        <p className="text-gray-500">No theaters owned yet.</p>
-      ) : (
-        <div className="space-y-6">
-          {ownedTheaters.map((theater) => {
-            // 🎯 Filter shows for this theater
-            const showsOfThisTheater = allShows.filter(
-              (show) => show.theaterId?._id === theater._id
-            );
-
-            return (
-              <div key={theater._id} className="border p-4 rounded shadow-sm">
-                <h3 className="text-lg font-semibold">
-                  🏢 {theater.name} — {theater.location} ({theater.totalSeats} seats)
-                </h3>
-
-                {/* 🎟️ Show List */}
-                {showsOfThisTheater.length > 0 ? (
-                  <ul className="mt-2 pl-4 list-disc text-sm text-gray-700">
-                    {showsOfThisTheater.map((show) => (
-                      <li key={show._id}>
-                        🎬 <strong>{show.movieId?.title}</strong> | 📅 {new Date(show.date).toLocaleDateString()} @ {show.time} | ₹{show.price}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-red-500 mt-1">No shows added yet.</p>
-                )}
-              </div>
-            );
-          })}
+      {/* 🎭 Theater List Section */}
+      {loadingShows ? (
+        // 🚦 While shows are loading, show a spinner
+        <div className="flex justify-center my-10">
+          <span className="loading loading-spinner loading-lg"></span> {/* ⏳ Tailwind DaisyUI Spinner */}
         </div>
+      ) : (
+        // ✅ After loading complete
+        <>
+          {ownedTheaters.length === 0 ? (
+            // ❗ No theaters owned
+            <p className="text-gray-500">No theaters owned yet.</p>
+          ) : (
+            // 🎟️ Loop through owned theaters
+            <div className="space-y-6">
+              {ownedTheaters.map((theater) => {
+                // 🎯 Filter shows belonging to this theater
+                const showsOfThisTheater = allShows.filter(
+                  (show) => show.theaterId?._id === theater._id
+                );
+
+                return (
+                  <div key={theater._id} className="border p-4 rounded shadow-sm">
+                    {/* 🏢 Theater Info */}
+                    <h3 className="text-lg font-semibold mb-2">
+                      🏢 {theater.name} — {theater.location} ({theater.totalSeats} seats)
+                    </h3>
+
+                    {/* 🎟️ Show List for This Theater */}
+                    {showsOfThisTheater.length > 0 ? (
+                      <ul className="mt-2 pl-4 list-none space-y-2">
+                        {showsOfThisTheater.map((show) => {
+                          // 🧠 Debugging Poster URL
+                          console.log("🎞️ Poster URL for show:", show.movieId?.posterUrl);
+
+                          return (
+                            <li key={show._id} className="flex items-center gap-4">
+                              {/* 🎞️ Poster Thumbnail */}
+                              {show.movieId?.posterUrl && (
+                                <img
+                                  src={show.movieId.posterUrl}
+                                  alt={show.movieId.title}
+                                  className="w-12 h-16 object-cover rounded"
+                                />
+                              )}
+
+                              {/* 📋 Show Info */}
+                              <div className="flex flex-col">
+                                <span className="font-semibold">{show.movieId?.title}</span>
+                                <span className="text-xs text-gray-600">
+                                  📅 {new Date(show.date).toLocaleDateString()} | 🕒 {show.time} | 💵 ₹{show.price}
+                                </span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      // ❗ No shows yet
+                      <p className="text-sm text-red-500 mt-1">No shows added yet.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* ➕ Add Show Button */}
@@ -92,18 +131,18 @@ const TheaterOwnerDashboard = () => {
         </button>
       </div>
 
-      {/* 📋 AddShowForm with props and callback */}
+      {/* 📋 AddShowForm Modal */}
       {showFormVisible && (
         <AddShowForm
-          movies={allMovies} // 📤 Props: from loader
-          theaters={ownedTheaters} // 📤 Props: filtered owned theaters
+          movies={allMovies} // 📤 Passing movies list
+          theaters={ownedTheaters} // 📤 Passing owned theaters
           onClose={() => {
-            console.log("❌ Hiding AddShowForm");
+            console.log("❌ Closing AddShowForm");
             setShowFormVisible(false);
           }}
           onShowAdded={() => {
             toast.success("✅ Show added successfully!");
-            fetchShows(); // 🔁 Refresh show list
+            fetchShows(); // 🔄 Refresh shows after adding new
             setShowFormVisible(false); // 🔙 Close form
           }}
         />

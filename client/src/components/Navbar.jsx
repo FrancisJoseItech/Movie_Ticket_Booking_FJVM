@@ -32,13 +32,13 @@ const Navbar = () => {
   return (
     <div className="navbar bg-base-100 shadow-md px-4">
       {/* 👈 Left: Brand Logo */}
-      <div className="flex-1">
+      <div className="flex-1 page-load-fadein inline-block">
         {/* 🎬 App Title - 'FJVM' */}
         {/* ✨ INTERACTION: This element will scale and change color when hovered */}
         {/* 🚫 NOTE: No animation happens automatically on page load */}
         <Link
           to="/"
-          className="text-xl font-bold transition-all duration-300 hover:scale-110 hover:text-primary"
+          className="text-xl font-bold transform scale-100 transition-transform duration-300 inline-block relative hover-roll-move"
         >
           🎬 FJVM
         </Link>
