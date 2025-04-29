@@ -34,17 +34,23 @@ const addMovie = async (req, res) => {
 
       try {
         console.log("📤 Uploading poster to Cloudinary...");
-        posterUrl = await uploadToCloudinary(localPath, "fjvm-posters"); // 👈 (optional) you can pass folder
+
+        // 🗂️ Optional: upload into 'fjvm-posters' folder
+        posterUrl = await uploadToCloudinary(localPath, "fjvm-posters");
         console.log("🌐 Cloudinary Upload Success, URL:", posterUrl);
 
-        // 🧹 Delete the file from local uploads/ folder after uploading to Cloudinary
-        fs.unlinkSync(localPath);
-        console.log("🧹 Local file deleted successfully:", localPath);
+        // ⚠️ Vercel has no persistent file system, only use this in dev
+        if (process.env.NODE_ENV === "development") {
+          fs.unlinkSync(localPath);
+          console.log("🧹 Local file deleted successfully:", localPath);
+        } else {
+          console.log("⚠️ Skipped local file deletion on production (e.g., Vercel)");
+        }
 
       } catch (cloudErr) {
+        // 🧯 Do NOT crash — just continue without poster
         console.error("❌ Cloudinary Upload Error:", cloudErr.message || cloudErr);
-        // 👇 Instead of failing the whole request, just continue WITHOUT poster
-        posterUrl = ""; 
+        posterUrl = "";
       }
     } else {
       console.log("ℹ️ No poster uploaded with this movie.");
