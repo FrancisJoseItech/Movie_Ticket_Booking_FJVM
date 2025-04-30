@@ -1,50 +1,59 @@
-// 📁 Multer Middleware for Handling File Uploads
-// 📦 Dependencies
+// 📁 src/middleware/upload.js
 const multer = require("multer");
 const path = require("path");
+
+// 📦 Load file system module only if needed
 const fs = require("fs");
 
-// 📁 Step 1: Ensure 'uploads' directory exists
+// 📁 Local uploads folder path (only used in development)
 const uploadDir = path.join(__dirname, "../uploads");
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-  console.log("📂 'uploads' folder created at:", uploadDir);
-} else {
-  console.log("📁 'uploads' folder already exists.");
+// ✅ Ensure uploads folder exists only in development
+if (process.env.NODE_ENV === "development") {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+    console.log("📂 Created 'uploads' folder at:", uploadDir);
+  } else {
+    console.log("📁 'uploads' folder already exists.");
+  }
 }
 
-// 💾 Step 2: Configure Multer storage
-const storage = multer.diskStorage({
-  // 📍 Set destination folder
+// 💾 1. Disk storage for development
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log("📥 Saving uploaded file to:", uploadDir);
+    console.log("📥 Saving file to local folder:", uploadDir);
     cb(null, uploadDir);
   },
-  // 📛 Set unique filename
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname); // e.g. '.jpg'
-    const generatedName = file.fieldname + "-" + uniqueSuffix + ext;
-    console.log("🧾 Generated filename:", generatedName);
-    cb(null, generatedName);
+    const ext = path.extname(file.originalname);
+    const uniqueName = `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    console.log("🧾 Generated filename:", uniqueName);
+    cb(null, uniqueName);
   },
 });
 
-// 🛡️ Step 3: Filter file types
+// 🧠 2. Memory storage for Vercel (no disk writes allowed)
+const memoryStorage = multer.memoryStorage();
+
+// 🔀 3. Choose storage dynamically
+const selectedStorage = process.env.NODE_ENV === "production" ? memoryStorage : diskStorage;
+
+// 🛡️ 4. Accept only images
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-  if (allowedTypes.includes(file.mimetype)) {
-    console.log("✅ Valid file type:", file.mimetype);
+  const allowed = ["image/jpeg", "image/png", "image/jpg"];
+  if (allowed.includes(file.mimetype)) {
+    console.log("✅ Valid image type:", file.mimetype);
     cb(null, true);
   } else {
-    console.warn("❌ Invalid file type:", file.mimetype);
-    cb(new Error("Only image files (jpeg, jpg, png) are allowed."), false);
+    console.warn("❌ Invalid image type:", file.mimetype);
+    cb(new Error("Only JPG, JPEG, PNG files are allowed."), false);
   }
 };
 
-// 🚀 Step 4: Create Multer instance with config
-const upload = multer({ storage, fileFilter });
+// 🚀 5. Final multer export
+const upload = multer({
+  storage: selectedStorage,
+  fileFilter,
+});
 
-// 📤 Export the middleware to use in routes
 module.exports = upload;

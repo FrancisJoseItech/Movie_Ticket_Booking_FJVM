@@ -1,83 +1,93 @@
 const Movie = require("../model/movieModel");
 
+// 🎬 Add Movie with optional Cloudinary Poster Upload (Admin Only)
 const fs = require("fs");
-const uploadToCloudinary = require("../utilities/uploadToCloudinary"); // ✅ Cloudinary upload utility
+const uploadToCloudinary = require("../utilities/uploadToCloudinary");           // For local dev
+const uploadBufferToCloudinary = require("../utilities/uploadBufferToCloudinary"); // For Vercel memory uploads
 
-
-
-// 🎬 Add Movie with (optional) Poster Upload (Admin Only)
 const addMovie = async (req, res) => {
   try {
-    // 🧠 Extracting fields from request body
+    // 🧠 Extract fields from form-data (text inputs)
     const { title, genre, duration, language, description } = req.body;
-    console.log("📥 Add Movie Request Body:", req.body);
+    console.log("📥 Movie form submission:", req.body);
 
-    // ❗ Step 1: Validate required fields
+    // ⚠️ Validate all required fields
     if (!title || !genre || !duration || !language || !description) {
-      console.log("⚠️ Missing required fields");
-      return res.status(400).json({ message: "All movie fields (title, genre, duration, language, description) are required." });
+      console.warn("⚠️ Missing required movie fields.");
+      return res.status(400).json({ message: "All movie fields are required." });
     }
 
-    // 🔍 Step 2: Check if movie already exists
-    const existingMovie = await Movie.findOne({ title });
-    if (existingMovie) {
-      console.log("⚠️ Duplicate Movie Title:", title);
-      return res.status(400).json({ message: "Movie already exists with the same title." });
+    // 🔍 Check if movie already exists by title
+    const duplicate = await Movie.findOne({ title });
+    if (duplicate) {
+      console.warn("⚠️ Duplicate movie title:", title);
+      return res.status(400).json({ message: "Movie already exists." });
     }
 
-    let posterUrl = ""; // 🌟 Initialize poster URL as empty
+    let posterUrl = ""; // 🖼️ Will store Cloudinary URL if uploaded
 
-    // 🖼️ Step 3: If poster file is provided, upload to Cloudinary
+    // 📦 Handle file upload if poster is provided
     if (req.file) {
-      const localPath = req.file.path;
-      console.log("🖼️ Poster File Path:", localPath);
+      console.log("🖼️ Poster file detected...");
 
-      try {
-        console.log("📤 Uploading poster to Cloudinary...");
-
-        // 🗂️ Optional: upload into 'fjvm-posters' folder
-        posterUrl = await uploadToCloudinary(localPath, "fjvm-posters");
-        console.log("🌐 Cloudinary Upload Success, URL:", posterUrl);
-
-        // ⚠️ Vercel has no persistent file system, only use this in dev
-        if (process.env.NODE_ENV === "development") {
-          fs.unlinkSync(localPath);
-          console.log("🧹 Local file deleted successfully:", localPath);
-        } else {
-          console.log("⚠️ Skipped local file deletion on production (e.g., Vercel)");
+      // 📦 1. If file is in memory (Vercel production)
+      if (req.file.buffer) {
+        console.log("🚀 Uploading from memory buffer (Vercel)...");
+        try {
+          posterUrl = await uploadBufferToCloudinary(req.file.buffer);
+          console.log("🌐 Cloudinary upload (buffer) success:", posterUrl);
+        } catch (err) {
+          console.error("❌ Cloudinary upload (buffer) failed:", err.message);
         }
 
-      } catch (cloudErr) {
-        // 🧯 Do NOT crash — just continue without poster
-        console.error("❌ Cloudinary Upload Error:", cloudErr.message || cloudErr);
-        posterUrl = "";
+      // 💾 2. If file is saved locally (Dev)
+      } else if (req.file.path) {
+        const localPath = req.file.path;
+        console.log("📁 Uploading from local path:", localPath);
+
+        try {
+          posterUrl = await uploadToCloudinary(localPath, "fjvm-posters");
+          console.log("🌐 Cloudinary upload (file) success:", posterUrl);
+
+          // 🧹 Delete the file locally only in development
+          if (process.env.NODE_ENV === "development") {
+            fs.unlinkSync(localPath);
+            console.log("🧹 Local file deleted:", localPath);
+          } else {
+            console.log("⚠️ Skipping local file deletion (Vercel has read-only FS)");
+          }
+
+        } catch (err) {
+          console.error("❌ Cloudinary upload (file) failed:", err.message);
+        }
       }
+
     } else {
-      console.log("ℹ️ No poster uploaded with this movie.");
+      console.log("ℹ️ No poster file uploaded. Proceeding without image.");
     }
 
-    // 💾 Step 4: Create new movie document
+    // 💾 Save new movie document
     const newMovie = new Movie({
       title,
       genre,
       duration,
       language,
       description,
-      posterUrl, // 🖼️ Save posterUrl if available, otherwise empty string
+      posterUrl, // 💡 will be empty string if upload fails or not provided
     });
 
     const savedMovie = await newMovie.save();
-    console.log("✅ Movie saved successfully:", savedMovie);
+    console.log("✅ Movie created successfully:", savedMovie.title);
 
-    // 📤 Step 5: Send success response
+    // 📤 Send success response
     res.status(201).json({
       message: "✅ Movie added successfully",
       movie: savedMovie,
     });
 
   } catch (err) {
-    console.error("❌ Server Error while adding movie:", err.message);
-    res.status(500).json({ message: "Server error while adding movie" });
+    console.error("❌ Server Error:", err.message);
+    res.status(500).json({ message: "Server error while adding movie." });
   }
 };
 
